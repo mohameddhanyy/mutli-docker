@@ -14,4 +14,14 @@ after_success:
   - docker build -t hany/multi-server ./server
   - docker build -t hany/multi-worker ./worker
 
+    # Log in to the Docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+
+  # Take those images and push them to Docker Hub
+  - docker push hany/multi-client
+  - docker push hany/multi-nginx
+  - docker push hany/multi-server
+  - docker push hany/multi-worker
+
+
 language: generic
