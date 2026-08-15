@@ -3,6 +3,7 @@ WORKDIR '/app'
 COPY ./package.json ./
 RUN npm install
 COPY . .
+ENV DISABLE_ESLINT_PLUGIN=true
 RUN CI=false npm run build
 
 FROM nginx 
