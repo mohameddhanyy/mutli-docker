@@ -3,25 +3,25 @@ services:
   - docker
 
 before_install:
-  - docker build -t hany/react-test -f ./client/Dockerfile.dev ./client
+  - docker build -t $DOCKER_ID/react-test -f ./client/Dockerfile.dev ./client
 
 script:
-  - docker run -e CI=true hany/react-test npm test
+  - docker run -e CI=true $DOCKER_ID/react-test npm test
 
 after_success:
-  - docker build -t hany/multi-client ./client
-  - docker build -t hany/multi-nginx ./nginx
-  - docker build -t hany/multi-server ./server
-  - docker build -t hany/multi-worker ./worker
+  - docker build -t $DOCKER_ID/multi-client ./client
+  - docker build -t $DOCKER_ID/multi-nginx ./nginx
+  - docker build -t $DOCKER_ID/multi-server ./server
+  - docker build -t $DOCKER_ID/multi-worker ./worker
 
     # Log in to the Docker CLI
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
 
   # Take those images and push them to Docker Hub
-  - docker push hany/multi-client
-  - docker push hany/multi-nginx
-  - docker push hany/multi-server
-  - docker push hany/multi-worker
+  - docker push $DOCKER_ID/multi-client
+  - docker push $DOCKER_ID/multi-nginx
+  - docker push $DOCKER_ID/multi-server
+  - docker push $DOCKER_ID/multi-worker
 
 
 language: generic
