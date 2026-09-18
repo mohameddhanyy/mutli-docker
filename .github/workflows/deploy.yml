@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_ID: ${{ secrets.DOCKER_ID }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build React test image
+        run: docker build -t $DOCKER_ID/react-test -f ./client/Dockerfile.dev ./client
+
+      - name: Run tests
+        run: docker run -e CI=true $DOCKER_ID/react-test npm test
+
+      - name: Build production images
+        run: |
+          docker build -t $DOCKER_ID/multi-client ./client
+          docker build -t $DOCKER_ID/multi-nginx ./nginx
+          docker build -t $DOCKER_ID/multi-server ./server
+          docker build -t $DOCKER_ID/multi-worker ./worker
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_ID }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push images to Docker Hub
+        run: |
+          docker push $DOCKER_ID/multi-client
+          docker push $DOCKER_ID/multi-nginx
+          docker push $DOCKER_ID/multi-server
+          docker push $DOCKER_ID/multi-worker
+
+      - name: Generate Elastic Beanstalk deployment package
+        if: github.ref == 'refs/heads/master'
+        run: zip -r deploy.zip . -x '*.git*'
+
+      - name: Deploy to Elastic Beanstalk
+        if: github.ref == 'refs/heads/master'
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          application_name: multi-docker
+          environment_name: MultiDocker-env
+          existing_bucket_name: elasticbeanstalk-us-east-1-148221445676
+          region: us-east-1
+          version_label: ${{ github.sha }}
+          deployment_package: deploy.zip
+          bucket_path: docker-multi
